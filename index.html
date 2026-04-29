@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Habit Tracker v5.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.08);
+    --border-med: rgba(0,0,0,0.14);
+    --text: #1a1917;
+    --text-2: #6b6860;
+    --text-3: #a09e99;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --accent: #639922;
+    --accent-done: #C0DD97;
+    --accent-border: #639922;
+    --accent-mid: #97C459;
+    --accent-light: rgba(99,153,34,0.10);
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --weekend-bg: rgba(186,117,23,0.06);
+    --weekend-text: #854F0B;
+  }
+  [data-theme="dark"] {
+    --bg: #141412;
+    --surface: #1e1d1b;
+    --surface2: #252420;
+    --border: rgba(255,255,255,0.08);
+    --border-med: rgba(255,255,255,0.14);
+    --text: #f0ede6;
+    --text-2: #9c9890;
+    --text-3: #5c5a55;
+    --weekend-bg: rgba(186,117,23,0.09);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    transition: background .2s, color .2s;
+  }
+
+  /* ── Layout ── */
+  .app-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-left { display: flex; flex-direction: column; gap: 6px; }
+  .tracker-name-input {
+    font-family: var(--font);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    outline: none;
+    border-bottom: 1.5px solid transparent;
+    transition: border-color .15s;
+    width: 260px;
+    padding-bottom: 2px;
+  }
+  .tracker-name-input:focus { border-bottom-color: var(--border-med); }
+  .cycle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cycle-name-input {
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-2);
+    background: transparent;
+    border: none;
+    outline: none;
+    border-bottom: 1.5px solid transparent;
+    transition: border-color .15s;
+    width: 160px;
+  }
+  .cycle-name-input:focus { border-bottom-color: var(--border-med); }
+  .row-label { font-size: 12px; color: var(--text-3); }
+  select.dow-sel, select.cfg-sel {
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 3px 7px;
+    border: 0.5px solid var(--border-med);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+  .header-right {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .theme-btn {
+    width: 32px; height: 32px;
+    border: 0.5px solid var(--border-med);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .theme-btn:hover { background: var(--surface2); }
+
+  /* ── Cycle pills ── */
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .pill {
+    padding: 5px 13px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-family: var(--font);
+    cursor: pointer;
+    border: 0.5px solid var(--border-med);
+    background: var(--surface);
+    color: var(--text-2);
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .pill.active { background: var(--surface2); color: var(--text); font-weight: 500; border-color: var(--border-med); }
+  .pill:hover { background: var(--surface2); }
+  .pill-add { border-style: dashed; }
+
+  /* ── Intent box ── */
+  .intent-box {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .intent-icon { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+  .intent-label { font-size: 11px; color: var(--text-3); margin-bottom: 2px; }
+  .intent-input {
+    width: 100%;
+    font-family: var(--font);
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    outline: none;
+  }
+  .intent-input::placeholder { color: var(--text-3); }
+
+  /* ── Insights ── */
+  .insights-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.25rem; }
+  .insight-card {
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 0.5px solid transparent;
+    animation: slideIn .25s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .insight-icon { font-size: 18px; flex-shrink: 0; width: 26px; text-align: center; }
+  .insight-body { flex: 1; min-width: 0; }
+  .insight-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .insight-desc { font-size: 12px; line-height: 1.45; }
+  .insight-val { font-size: 18px; font-weight: 500; flex-shrink: 0; font-family: var(--mono); }
+  .ins-green { background: #EAF3DE; border-color: #97C459; }
+  .ins-green .insight-title { color: #27500A; } .ins-green .insight-desc { color: #3B6D11; } .ins-green .insight-val { color: #639922; }
+  .ins-amber { background: #FAEEDA; border-color: #EF9F27; }
+  .ins-amber .insight-title { color: #633806; } .ins-amber .insight-desc { color: #854F0B; } .ins-amber .insight-val { color: #BA7517; }
+  .ins-red { background: #FCEBEB; border-color: #F09595; }
+  .ins-red .insight-title { color: #501313; } .ins-red .insight-desc { color: #A32D2D; } .ins-red .insight-val { color: #E24B4A; }
+  .ins-blue { background: #E6F1FB; border-color: #85B7EB; }
+  .ins-blue .insight-title { color: #042C53; } .ins-blue .insight-desc { color: #185FA5; } .ins-blue .insight-val { color: #378ADD; }
+  .ins-gray { background: var(--surface2); border-color: var(--border); }
+  .ins-gray .insight-title { color: var(--text); } .ins-gray .insight-desc { color: var(--text-2); } .ins-gray .insight-val { color: var(--text-3); }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex; gap: 4px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 1.5rem;
+  }
+  .tab-btn {
+    flex: 1; padding: 7px 10px;
+    border: none; background: transparent; border-radius: 7px;
+    cursor: pointer; font-size: 13px; font-family: var(--font);
+    color: var(--text-2); transition: all .15s;
+  }
+  .tab-btn.active { background: var(--surface); color: var(--text); font-weight: 500; border: 0.5px solid var(--border); }
+  .section { display: none; } .section.active { display: block; }
+
+  /* ── Metrics ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .mc { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: .9rem 1rem; }
+  .mc-label { font-size: 11px; color: var(--text-3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+  .mc-value { font-size: 22px; font-weight: 500; font-family: var(--mono); }
+  .mc-sub { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+  /* ── Legend ── */
+  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 1rem; font-size: 12px; color: var(--text-2); align-items: center; }
+  .ldot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; margin-right: 3px; vertical-align: middle; }
+
+  /* ── Calendar ── */
+  .cal-wrap { overflow-x: auto; margin-bottom: 1.5rem; border-radius: var(--radius); border: 0.5px solid var(--border); }
+  .cal-table { border-collapse: collapse; min-width: 700px; width: 100%; background: var(--surface); }
+  .cal-table th {
+    font-size: 11px; color: var(--text-3); font-weight: 400;
+    padding: 6px 2px; text-align: center;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--surface2);
+  }
+  .cal-table th.weh { color: var(--weekend-text); }
+  .cal-table th:first-child { text-align: left; padding-left: 12px; min-width: 140px; }
+  .cal-table td { padding: 2px 2px; text-align: center; vertical-align: middle; }
+  .cal-table td:first-child { padding-left: 8px; text-align: left; }
+  .cal-table tr:hover { background: rgba(0,0,0,0.015); }
+  .hname { font-size: 12px; color: var(--text); padding: 4px 6px 4px 4px; white-space: nowrap; }
+  .wbadge {
+    display: inline-block; font-size: 10px;
+    background: var(--surface2); border: 0.5px solid var(--border); border-radius: 4px;
+    padding: 1px 4px; margin-left: 3px; color: var(--text-3);
+    font-family: var(--mono);
+  }
+  .hcell {
+    cursor: pointer; width: 24px; height: 24px; border-radius: 5px;
+    margin: 1px auto; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; border: 0.5px solid var(--border);
+    transition: background .1s, border-color .1s, transform .08s;
+    user-select: none;
+  }
+  .hcell:active { transform: scale(0.9); }
+  .hcell.done { border-color: var(--accent-border); }
+  .hcell.miss2 { background: #FCEBEB; border-color: #E24B4A; }
+  .hcell.skip { background: var(--surface2); }
+  .wecol { background: var(--weekend-bg) !important; }
+  .score-row td { border-top: 0.5px solid var(--border); }
+
+  /* ── Action buttons ── */
+  .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn {
+    font-family: var(--font); font-size: 13px; font-weight: 400;
+    padding: 7px 16px; border-radius: var(--radius);
+    border: 0.5px solid var(--border-med);
+    background: var(--surface); color: var(--text);
+    cursor: pointer; transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-accent { border-color: var(--accent-border); color: var(--accent-border); }
+  .btn-accent:hover { background: var(--accent-light); }
+  input[type=file] { display: none; }
+
+  /* ── Charts ── */
+  .section-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: .85rem; text-transform: uppercase; letter-spacing: .06em; }
+  .chart-area { margin-bottom: 1.75rem; }
+  .corr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+  .corr-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+  .pbar-wrap { background: var(--surface2); border-radius: 99px; height: 6px; overflow: hidden; margin-top: 4px; }
+  .pbar { height: 100%; border-radius: 99px; transition: width .4s ease; }
+
+  /* ── Config ── */
+  .cfg-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px;
+  }
+  .cfg-card .section-title { margin-bottom: .75rem; }
+  .hrow { display: grid; grid-template-columns: 1fr 70px 56px 32px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .hrow input { width: 100%; font-size: 13px; font-family: var(--font); padding: 5px 8px; border: 0.5px solid var(--border-med); border-radius: 7px; background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+  .hrow input:focus { border-color: var(--accent-border); }
+  .del-btn { width: 28px; height: 28px; border: 0.5px solid var(--border-med); border-radius: 6px; background: transparent; cursor: pointer; color: var(--text-3); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .del-btn:hover { background: #FCEBEB; color: #E24B4A; border-color: #E24B4A; }
+  .add-btn { border: 0.5px dashed var(--border-med); background: transparent; border-radius: var(--radius); padding: 7px 14px; font-size: 13px; font-family: var(--font); color: var(--text-2); cursor: pointer; width: 100%; margin-bottom: 1rem; transition: background .15s; }
+  .add-btn:hover { background: var(--surface2); }
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: border-color .15s, transform .12s; }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.sel { border-color: var(--text); }
+  .info-note { background: #E6F1FB; border: 0.5px solid #85B7EB; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #185FA5; margin-bottom: 12px; line-height: 1.5; }
+  .cfg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cfg-row label { font-size: 13px; color: var(--text-2); }
+  .cfg-row input[type=number] { width: 70px; font-size: 13px; font-family: var(--mono); padding: 5px 8px; border: 0.5px solid var(--border-med); border-radius: 7px; background: var(--surface); color: var(--text); outline: none; }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 1rem;
+    animation: fadeIn .15s ease;
+  }
+  .modal-overlay.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: var(--surface); border: 0.5px solid var(--border-med);
+    border-radius: var(--radius-lg); padding: 1.5rem;
+    width: 100%; max-width: 420px;
+    animation: popIn .2s ease;
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
+  .modal-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+  .modal-info { font-size: 13px; color: var(--text-2); margin-bottom: 12px; }
+  .modal-ta {
+    width: 100%; font-size: 13px; font-family: var(--font);
+    padding: 10px 12px; border: 0.5px solid var(--border-med); border-radius: var(--radius);
+    background: var(--surface2); color: var(--text); resize: vertical; min-height: 90px;
+    outline: none; transition: border-color .15s; line-height: 1.5;
+  }
+  .modal-ta:focus { border-color: var(--accent-border); }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .version-tag {
+    font-size: 10px; color: var(--text-3); font-family: var(--mono);
+    background: var(--surface2); border: 0.5px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; align-self: flex-end;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .app-shell { padding: 1rem 1rem 3rem; }
+    .corr-grid { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .hrow { grid-template-columns: 1fr 60px 50px 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input class="tracker-name-input" id="tracker-name" value="Meus hábitos" onchange="S.trackerName=this.value;save();" spellcheck="false" />
+        <span class="version-tag">v5.0</span>
+      </div>
+      <div class="cycle-row">
+        <input class="cycle-name-input" id="cycle-name-inp" value="Maio 2025" onchange="renameCycle(this.value)" spellcheck="false" />
+        <span class="row-label">começa em</span>
+        <select class="dow-sel" id="dow-sel" onchange="setStartDow(parseInt(this.value))">
+          <option value="0">Dom</option><option value="1">Seg</option><option value="2">Ter</option>
+          <option value="3">Qua</option><option value="4">Qui</option><option value="5">Sex</option><option value="6">Sáb</option>
+        </select>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">☀</button>
+      <div class="pills" id="cycle-pills"></div>
+      <button class="pill pill-add" onclick="addCycle()">+ Novo ciclo</button>
+    </div>
+  </div>
+
+  <!-- Intent -->
+  <div class="intent-box">
+    <div class="intent-icon">✦</div>
+    <div style="flex:1;">
+      <div class="intent-label">Intenção deste ciclo</div>
+      <input class="intent-input" id="intent-inp" placeholder="Ex: Este mês foco em consistência, não perfeição..." oninput="cycleData().intent=this.value;save();" spellcheck="false" />
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="insights-bar" id="insights-bar"></div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('tracker',this)">Tracker</button>
+    <button class="tab-btn" onclick="showTab('graficos',this)">Gráficos</button>
+    <button class="tab-btn" onclick="showTab('config',this)">Configurar</button>
+  </div>
+
+  <!-- Tab: Tracker -->
+  <div id="tab-tracker" class="section active">
+    <div class="metrics-grid" id="metrics-grid"></div>
+    <div class="legend-row">
+      <span><span class="ldot" id="leg-done"></span>Feito</span>
+      <span><span class="ldot" style="background:#FCEBEB;border:0.5px solid #E24B4A;"></span>2+ dias sem fazer</span>
+      <span><span class="ldot" style="background:var(--weekend-bg);border:0.5px solid rgba(186,117,23,0.3);"></span>Final de semana</span>
+      <span><span class="ldot" style="background:#E6F1FB;border-radius:50%;border:0.5px solid #85B7EB;"></span>Comentário</span>
+    </div>
+    <div class="cal-wrap">
+      <table class="cal-table" id="cal-table"></table>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-accent" onclick="quickFillToday()">⚡ Preencher hoje</button>
+      <button class="btn" onclick="exportJSON()">↓ Exportar JSON</button>
+      <label class="btn" style="cursor:pointer;" onclick="document.getElementById('imp-file').click()">↑ Importar JSON</label>
+      <input type="file" id="imp-file" accept=".json" onchange="importJSON(event)" />
+    </div>
+  </div>
+
+  <!-- Tab: Gráficos -->
+  <div id="tab-graficos" class="section">
+    <div class="section-title">Atingimento diário (%)</div>
+    <div style="position:relative;height:200px;" class="chart-area"><canvas id="chart-daily" role="img" aria-label="Score diário">Score por dia</canvas></div>
+    <div class="section-title">Score acumulado vs meta</div>
+    <div style="position:relative;height:180px;" class="chart-area"><canvas id="chart-cumul" role="img" aria-label="Score acumulado versus meta">Score acumulado</canvas></div>
+    <div class="section-title">1ª vs 2ª metade do ciclo</div>
+    <div style="position:relative;height:160px;" class="chart-area"><canvas id="chart-trend" role="img" aria-label="Tendência do ciclo">Tendência</canvas></div>
+    <div class="section-title">Dias úteis vs finais de semana</div>
+    <div style="position:relative;height:160px;" class="chart-area"><canvas id="chart-wknd" role="img" aria-label="Semana vs fim de semana">Semana</canvas></div>
+    <div class="section-title">Correlações entre hábitos</div>
+    <div id="corr-section" class="chart-area"></div>
+    <div class="section-title">Taxa de conclusão por hábito</div>
+    <div id="habit-bars" class="chart-area"></div>
+  </div>
+
+  <!-- Tab: Configurar -->
+  <div id="tab-config" class="section">
+    <div class="cfg-card">
+      <div class="section-title">Identidade do tracker</div>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">Nome do tracker</div>
+        <input style="width:100%;font-size:15px;font-family:var(--font);padding:6px 0;background:transparent;border:none;border-bottom:0.5px solid var(--border-med);color:var(--text);outline:none;" id="cfg-name" onchange="S.trackerName=this.value;document.getElementById('tracker-name').value=this.value;save();" spellcheck="false" />
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px;">Cor de destaque</div>
+        <div class="color-row" id="color-swatches"></div>
+      </div>
+    </div>
+    <div class="cfg-card">
+      <div class="section-title">Meta de atingimento</div>
+      <div class="cfg-row">
+        <input type="number" min="1" max="100" id="target-input" onchange="S.target=parseInt(this.value)||80;save();renderAll();" />
+        <label>% mínimo por dia para streak e dia válido</label>
+      </div>
+    </div>
+    <div class="cfg-card">
+      <div class="section-title">Hábitos</div>
+      <div class="info-note">
+        Adicionar ou remover hábitos não apaga dados de ciclos anteriores. Cada ciclo guarda seus checks pelo ID do hábito de forma independente.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 70px 56px 32px;gap:8px;margin-bottom:8px;">
+        <span style="font-size:11px;color:var(--text-3);">Nome</span>
+        <span style="font-size:11px;color:var(--text-3);">Peso (1–5)</span>
+        <span style="font-size:11px;color:var(--text-3);">Emoji</span>
+        <span></span>
+      </div>
+      <div id="habit-config-list"></div>
+      <button class="add-btn" onclick="addHabit()">+ Adicionar hábito</button>
+      <button class="btn btn-accent" onclick="saveConfig()">Salvar configuração</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Comentário -->
+<div class="modal-overlay" id="comment-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Comentário</div>
+    <div class="modal-info" id="modal-info"></div>
+    <textarea class="modal-ta" id="modal-ta" placeholder="O que aconteceu hoje? Contexto, conquistas, obstáculos..."></textarea>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveComment()">Salvar comentário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmação desmarcar -->
+<div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
+  <div class="modal-box">
+    <div class="modal-title">Desmarcar hábito?</div>
+    <div class="modal-info" id="confirm-msg" style="margin-bottom:0;"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn" style="background:#FCEBEB;border-color:#E24B4A;color:#A32D2D;" onclick="confirmUncheck()">Desmarcar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const VERSION = 'v5.0';
+
+const ACCENTS = [
+  {name:'Verde',  done:'#C0DD97', border:'#639922', mid:'#97C459',  light:'rgba(99,153,34,0.10)'},
+  {name:'Azul',   done:'#B5D4F4', border:'#185FA5', mid:'#378ADD',  light:'rgba(24,95,165,0.08)'},
+  {name:'Roxo',   done:'#CECBF6', border:'#534AB7', mid:'#7F77DD',  light:'rgba(83,74,183,0.08)'},
+  {name:'Coral',  done:'#F5C4B3', border:'#993C1D', mid:'#D85A30',  light:'rgba(153,60,29,0.08)'},
+  {name:'Teal',   done:'#9FE1CB', border:'#0F6E56', mid:'#1D9E75',  light:'rgba(15,110,86,0.08)'},
+  {name:'Rosa',   done:'#F4C0D1', border:'#993556', mid:'#D4537E',  light:'rgba(153,53,86,0.08)'},
+];
+
+let S = {
+  version: VERSION,
+  trackerName: 'Meus hábitos',
+  target: 80,
+  accentIdx: 0,
+  theme: 'light',
+  currentCycle: 0,
+  cycles: [{ name: 'Maio 2025', startDow: 3, intent: '', data: {}, comments: {} }],
+  habits: [
+    {id:'h1', name:'Exercício',         weight:5, emoji:'🏃'},
+    {id:'h2', name:'Leitura 30min',     weight:3, emoji:'📚'},
+    {id:'h3', name:'Meditação',         weight:4, emoji:'🧘'},
+    {id:'h4', name:'Água 2L',           weight:2, emoji:'💧'},
+    {id:'h5', name:'Sem redes sociais', weight:2, emoji:'📵'},
+  ]
+};
+
+try { const saved = localStorage.getItem('ht5'); if (saved) S = JSON.parse(saved); } catch(e) {}
+
+function save() {
+  try { localStorage.setItem('ht5', JSON.stringify(S)); } catch(e) {}
+}
+
+/* ── Accent helpers ── */
+function ac() { return ACCENTS[S.accentIdx] || ACCENTS[0]; }
+
+function applyAccent() {
+  const a = ac();
+  document.documentElement.style.setProperty('--accent-done',   a.done);
+  document.documentElement.style.setProperty('--accent-border', a.border);
+  document.documentElement.style.setProperty('--accent-mid',    a.mid);
+  document.documentElement.style.setProperty('--accent-light',  a.light);
+  document.documentElement.style.setProperty('--accent',        a.border);
+  const ld = document.getElementById('leg-done');
+  if (ld) { ld.style.background = a.done; ld.style.border = '0.5px solid ' + a.border; }
+  renderSwatches();
+}
+
+function setAccent(i) { S.accentIdx = i; save(); applyAccent(); renderAll(); }
+
+function renderSwatches() {
+  const el = document.getElementById('color-swatches');
+  if (!el) return;
+  el.innerHTML = ACCENTS.map((a, i) =>
+    `<div class="swatch ${i === S.accentIdx ? 'sel' : ''}" style="background:${a.mid};" title="${a.name}" onclick="setAccent(${i})"></div>`
+  ).join('');
+}
+
+/* ── Theme ── */
+function toggleTheme() {
+  S.theme = S.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', S.theme);
+  document.querySelector('.theme-btn').textContent = S.theme === 'dark' ? '☾' : '☀';
+  save();
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', S.theme || 'light');
+  document.querySelector('.theme-btn').textContent = S.theme === 'dark' ? '☾' : '☀';
+}
+
+/* ── Cycle helpers ── */
+function cycleData() { return S.cycles[S.currentCycle] || S.cycles[0]; }
+function getDow(day) { return ((cycleData().startDow || 0) + day - 1) % 7; }
+function isWeekend(day) { const d = getDow(day); return d === 0 || d === 6; }
+
+/* ── Score helpers ── */
+function dayScore(dd) {
+  if (!dd) return 0;
+  let tw = 0, dw = 0;
+  S.habits.forEach(h => { tw += h.weight; if (dd[h.id]) dw += h.weight; });
+  return tw > 0 ? Math.round((dw / tw) * 100) : 0;
+}
+function isValidDay(dd) { return dayScore(dd) >= S.target; }
+function hasData(dd) { return dd && Object.keys(dd).length > 0; }
+function scoreColor(s) { return s >= S.target ? ac().border : s >= S.target * .7 ? '#BA7517' : '#E24B4A'; }
+
+function isMiss2(day, hid) {
+  const d = cycleData().data;
+  return day > 1 && (!d[day] || !d[day][hid]) && (!d[day - 1] || !d[day - 1][hid]);
+}
+
+/* ── Stats ── */
+function computeStats() {
+  const d = cycleData().data || {};
+  let streak = 0, valid = 0, filled = 0, total = 0;
+  let wkS = 0, wkN = 0, wdS = 0, wdN = 0, h1 = 0, h1n = 0, h2 = 0, h2n = 0;
+  for (let i = 1; i <= 30; i++) {
+    if (hasData(d[i])) {
+      const s = dayScore(d[i]); filled++; total += s;
+      if (isValidDay(d[i])) valid++;
+      if (isWeekend(i)) { wkS += s; wkN++; } else { wdS += s; wdN++; }
+      if (i <= 15) { h1 += s; h1n++; } else { h2 += s; h2n++; }
+    }
+  }
+  for (let i = 30; i >= 1; i--) {
+    if (hasData(d[i]) && isValidDay(d[i])) streak++;
+    else if (hasData(d[i])) break;
+  }
+  return {
+    streak, valid, filled,
+    avg: filled > 0 ? Math.round(total / filled) : 0,
+    wkAvg: wkN > 0 ? Math.round(wkS / wkN) : null,
+    wdAvg: wdN > 0 ? Math.round(wdS / wdN) : null,
+    h1Avg: h1n > 0 ? Math.round(h1 / h1n) : null,
+    h2Avg: h2n > 0 ? Math.round(h2 / h2n) : null,
+    trend: (h1n > 0 && h2n > 0) ? Math.round(h2 / h2n) - Math.round(h1 / h1n) : null,
+  };
+}
+
+function computeCorrelations() {
+  const d = cycleData().data || {};
+  const days = Object.keys(d).map(Number).filter(i => hasData(d[i]));
+  if (days.length < 5) return [];
+  const pairs = [];
+  for (let a = 0; a < S.habits.length; a++) {
+    for (let b = a + 1; b < S.habits.length; b++) {
+      const ha = S.habits[a], hb = S.habits[b];
+      let both = 0;
+      days.forEach(i => { if (d[i] && d[i][ha.id] && d[i][hb.id]) both++; });
+      const pct = Math.round((both / days.length) * 100);
+      if (pct >= 60) pairs.push({ a: ha, b: hb, pct, both, n: days.length });
+    }
+  }
+  return pairs.sort((x, y) => y.pct - x.pct).slice(0, 4);
+}
+
+function computeWeakHabits() {
+  const d = cycleData().data || {};
+  const filled = Object.keys(d).map(Number).filter(i => hasData(d[i]));
+  if (filled.length < 4) return [];
+  return S.habits.map(h => {
+    const cnt = filled.filter(i => d[i] && d[i][h.id]).length;
+    return { h, pct: Math.round((cnt / filled.length) * 100) };
+  }).filter(x => x.pct < 40).sort((a, b) => a.pct - b.pct);
+}
+
+/* ── Insights ── */
+function renderInsights() {
+  const st = computeStats();
+  const ins = [];
+
+  if (st.streak >= 7)
+    ins.push({cls:'ins-green', icon:'🔥', title:`${st.streak} dias de streak!`, desc:'Sequência incrível. Você está no ritmo.', val:st.streak+'d'});
+  else if (st.streak >= 3)
+    ins.push({cls:'ins-green', icon:'⚡', title:`Streak de ${st.streak} dias`, desc:`Continue para chegar aos 7. Cada dia ≥ ${S.target}% conta.`, val:st.streak+'d'});
+  else if (st.streak === 0 && st.filled >= 3)
+    ins.push({cls:'ins-red', icon:'💔', title:'Streak zerado', desc:`Volte a atingir ${S.target}% por dia para reconstruir a sequência.`, val:'0d'});
+
+  if (st.wkAvg !== null && st.wdAvg !== null) {
+    const diff = st.wdAvg - st.wkAvg;
+    if (diff >= 15)
+      ins.push({cls:'ins-amber', icon:'📅', title:'Finais de semana são seu ponto fraco', desc:`Score cai ${diff} pontos no FDS (${st.wdAvg}% úteis → ${st.wkAvg}% FDS). Que hábito você consegue manter no fim de semana?`, val:'-'+diff+'%'});
+    else if (diff <= -10)
+      ins.push({cls:'ins-blue', icon:'🏖️', title:'Você vai melhor no fim de semana!', desc:`Score ${Math.abs(diff)} pontos mais alto no FDS (${st.wkAvg}% vs ${st.wdAvg}%).`, val:'+'+Math.abs(diff)+'%'});
+  }
+
+  if (st.trend !== null && st.filled >= 12) {
+    if (st.trend >= 10)
+      ins.push({cls:'ins-green', icon:'📈', title:'Tendência positiva no ciclo', desc:`2ª metade ${st.trend} pontos acima da 1ª (${st.h1Avg}% → ${st.h2Avg}%). Você está acelerando.`, val:'+'+st.trend+'%'});
+    else if (st.trend <= -10)
+      ins.push({cls:'ins-red', icon:'📉', title:'Queda na 2ª metade do ciclo', desc:`2ª metade ${Math.abs(st.trend)} pontos abaixo da 1ª (${st.h1Avg}% → ${st.h2Avg}%). Atenção ao cansaço acumulado.`, val:st.trend+'%'});
+  }
+
+  const weak = computeWeakHabits();
+  if (weak.length > 0) {
+    const w = weak[0];
+    ins.push({cls:'ins-amber', icon:'👀', title:`${w.h.emoji} ${w.h.name} pede atenção`, desc:`Feito em apenas ${w.pct}% dos dias preenchidos — menor adesão do ciclo.`, val:w.pct+'%'});
+  }
+
+  const corrs = computeCorrelations();
+  if (corrs.length > 0) {
+    const c = corrs[0];
+    ins.push({cls:'ins-blue', icon:'🔗', title:`${c.a.emoji} + ${c.b.emoji} são hábitos âncora`, desc:`Você fez "${c.a.name}" e "${c.b.name}" juntos em ${c.pct}% dos dias. Um puxa o outro.`, val:c.pct+'%'});
+  }
+
+  if (ins.length === 0)
+    ins.push({cls:'ins-gray', icon:'👋', title:'Preencha os primeiros dias', desc:'Com 5+ dias preenchidos os insights começam a aparecer.', val:''});
+
+  document.getElementById('insights-bar').innerHTML = ins.map(i => `
+    <div class="insight-card ${i.cls}">
+      <div class="insight-icon">${i.icon}</div>
+      <div class="insight-body">
+        <div class="insight-title">${i.title}</div>
+        <div class="insight-desc">${i.desc}</div>
+      </div>
+      ${i.val ? `<div class="insight-val">${i.val}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ── Metrics ── */
+function renderMetrics() {
+  const st = computeStats(); const a = ac();
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="mc">
+      <div class="mc-label">Score médio</div>
+      <div class="mc-value" style="color:${st.avg >= S.target ? a.border : st.avg > 0 ? '#BA7517' : '#E24B4A'}">${st.avg}%</div>
+      <div class="mc-sub">meta: ${S.target}%</div>
+    </div>
+    <div class="mc">
+      <div class="mc-label">Dias válidos</div>
+      <div class="mc-value">${st.valid}</div>
+      <div class="mc-sub">de ${st.filled} preenchidos</div>
+    </div>
+    <div class="mc">
+      <div class="mc-label">Streak</div>
+      <div class="mc-value" style="color:${st.streak >= 3 ? a.border : 'var(--text)'}">${st.streak}${st.streak >= 3 ? ' 🔥' : ''}</div>
+      <div class="mc-sub">dias ≥ ${S.target}% seguidos</div>
+    </div>
+    <div class="mc">
+      <div class="mc-label">FDS vs úteis</div>
+      <div class="mc-value" style="font-size:15px;">${st.wdAvg !== null ? st.wdAvg + '%' : '—'} <span style="font-size:12px;color:var(--text-3);">vs</span> <span style="color:${st.wkAvg !== null ? (st.wkAvg >= S.target ? a.border : '#BA7517') : 'var(--text-3)'}">${st.wkAvg !== null ? st.wkAvg + '%' : '—'}</span></div>
+      <div class="mc-sub">útil vs fim de semana</div>
+    </div>
+    <div class="mc">
+      <div class="mc-label">Progresso</div>
+      <div class="mc-value" style="font-size:15px;">${st.filled}/30</div>
+      <div class="mc-sub" style="margin-top:6px;"><div class="pbar-wrap"><div class="pbar" style="width:${Math.round(st.filled / 30 * 100)}%;background:${a.border};"></div></div></div>
+    </div>
+  `;
+}
+
+/* ── Calendar ── */
+function renderCalendar() {
+  const c = cycleData(); const d = c.data || {}; const cm = c.comments || {};
+  const DOWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  let html = '<thead><tr><th>Hábito</th>';
+  for (let i = 1; i <= 30; i++) {
+    const we = isWeekend(i);
+    html += `<th class="${we ? 'weh' : ''}">${i}<br><span style="font-size:9px;font-weight:400;">${DOWS[getDow(i)].slice(0,1)}</span></th>`;
+  }
+  html += '<th style="font-size:11px;">%</th></tr></thead><tbody>';
+
+  S.habits.forEach(h => {
+    html += `<tr><td class="hname">${h.emoji} ${h.name} <span class="wbadge">×${h.weight}</span></td>`;
+    for (let i = 1; i <= 30; i++) {
+      const done  = d[i] && d[i][h.id];
+      const m2    = !done && isMiss2(i, h.id);
+      const we    = isWeekend(i);
+      const bg    = done ? `background:var(--accent-done);border-color:var(--accent-border);`
+                         : m2 ? `background:#FCEBEB;border-color:#E24B4A;` : '';
+      html += `<td class="${we ? 'wecol' : ''}">
+        <div class="hcell ${done ? 'done' : m2 ? 'miss2' : 'skip'}" style="${bg}"
+          onclick="handleCellClick(${i},'${h.id}',${!!done})"
+          title="${done ? 'Feito — clique para desmarcar' : m2 ? 'Atenção: 2+ dias sem fazer' : 'Clique para marcar'}"
+        >${done ? '✓' : m2 ? '!' : ''}</div>
+      </td>`;
+    }
+    let cnt = 0;
+    for (let i = 1; i <= 30; i++) if (d[i] && d[i][h.id]) cnt++;
+    const pct = Math.round(cnt / 30 * 100);
+    html += `<td style="font-size:12px;font-weight:500;color:${scoreColor(pct)};font-family:var(--mono);">${pct}%</td></tr>`;
+  });
+
+  html += '<tr class="score-row"><td class="hname" style="font-weight:500;font-size:12px;">Dia</td>';
+  for (let i = 1; i <= 30; i++) {
+    const we = isWeekend(i);
+    const s = hasData(d[i]) ? dayScore(d[i]) : null;
+    const hasCm = cm[i] && cm[i].trim();
+    const valid = s !== null && s >= S.target;
+    html += `<td class="${we ? 'wecol' : ''}" style="vertical-align:top;padding:2px 1px;">`;
+    html += s !== null
+      ? `<div style="font-size:10px;font-weight:500;color:${scoreColor(s)};margin-top:2px;font-family:var(--mono);">${s}%${valid ? ' ✓' : ''}</div>`
+      : `<div style="font-size:10px;color:var(--text-3);">—</div>`;
+    html += `<div onclick="openComment(${i})" title="${hasCm ? cm[i] : 'Adicionar comentário'}"
+      style="cursor:pointer;width:16px;height:16px;border-radius:50%;
+      border:0.5px solid ${hasCm ? '#378ADD' : 'var(--border)'};
+      background:${hasCm ? '#E6F1FB' : 'transparent'};
+      display:flex;align-items:center;justify-content:center;
+      font-size:8px;margin:2px auto 0;
+      color:${hasCm ? '#185FA5' : 'var(--text-3)'};">✎</div>`;
+    html += '</td>';
+  }
+  html += '<td></td></tr></tbody>';
+  document.getElementById('cal-table').innerHTML = html;
+}
+
+/* ── Cell interaction ── */
+let pendingUncheck = null;
+function handleCellClick(day, hid, isDone) {
+  if (isDone) {
+    pendingUncheck = { day, hid };
+    const h = S.habits.find(x => x.id === hid);
+    document.getElementById('confirm-msg').textContent = `Desmarcar "${h ? h.name : 'hábito'}" do dia ${day}?`;
+    document.getElementById('confirm-modal').classList.add('open');
+  } else {
+    const d = cycleData().data;
+    if (!d[day]) d[day] = {};
+    d[day][hid] = true;
+    save(); renderAll();
+  }
+}
+function confirmUncheck() {
+  if (!pendingUncheck) return;
+  const { day, hid } = pendingUncheck;
+  const d = cycleData().data;
+  if (d[day]) d[day][hid] = false;
+  save(); closeConfirm(); renderAll();
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); pendingUncheck = null; }
+
+/* ── Quick fill ── */
+function quickFillToday() {
+  const d = cycleData().data;
+  const filled = Object.keys(d).map(Number).filter(i => hasData(d[i]));
+  const today = filled.length > 0 ? Math.max(...filled) + 1 : 1;
+  if (today > 30) { alert('Ciclo de 30 dias já completo!'); return; }
+  if (!d[today]) d[today] = {};
+  S.habits.forEach(h => { d[today][h.id] = true; });
+  save(); renderAll();
+}
+
+/* ── Comments ── */
+let modalDay = null;
+function openComment(day) {
+  modalDay = day;
+  const c = cycleData();
+  const DOWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  document.getElementById('modal-title').textContent = `Dia ${day} — ${DOWS[getDow(day)]}${isWeekend(day) ? ' (fim de semana)' : ''}`;
+  const s = hasData((c.data || {})[day]) ? dayScore((c.data || {})[day]) : null;
+  document.getElementById('modal-info').textContent = s !== null
+    ? `Score do dia: ${s}% ${s >= S.target ? '✓ Dia válido' : ''}`
+    : 'Dia ainda não preenchido';
+  document.getElementById('modal-ta').value = (c.comments && c.comments[day]) || '';
+  document.getElementById('comment-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('comment-modal').classList.remove('open'); modalDay = null; }
+function saveComment() {
+  const c = cycleData();
+  if (!c.comments) c.comments = {};
+  c.comments[modalDay] = document.getElementById('modal-ta').value;
+  save(); closeModal(); renderCalendar();
+}
+
+/* ── Export / Import ── */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `habitos_${S.trackerName.replace(/\s+/g,'_')}_${VERSION}.json`;
+  a.click();
+}
+function importJSON(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.habits || !imported.cycles) throw new Error();
+      S = imported; save();
+      applyTheme(); applyAccent(); renderCyclePills(); renderAll();
+      alert('Dados importados com sucesso!');
+    } catch { alert('Arquivo inválido. Use um JSON exportado por este tracker.'); }
+  };
+  r.readAsText(f);
+  e.target.value = '';
+}
+
+/* ── Charts ── */
+let cD = null, cC = null, cT = null, cW = null;
+function renderCharts() {
+  const d = cycleData().data || {}; const a = ac();
+  const labels = [], scores = [], cumul = [], meta = [];
+  let run = 0, cnt = 0;
+  for (let i = 1; i <= 30; i++) {
+    labels.push('D' + i);
+    const s = hasData(d[i]) ? dayScore(d[i]) : null;
+    scores.push(s);
+    if (s !== null) { run += s; cnt++; }
+    cumul.push(cnt > 0 ? Math.round(run / cnt) : null);
+    meta.push(S.target);
+  }
+  const bgC = scores.map(s => s === null ? 'rgba(0,0,0,0.04)' : s >= S.target ? a.done : s >= S.target * .7 ? '#FAEEDA' : '#FCEBEB');
+  const bdC = scores.map(s => s === null ? 'transparent' : s >= S.target ? a.border : s >= S.target * .7 ? '#BA7517' : '#E24B4A');
+
+  if (cD) cD.destroy();
+  cD = new Chart(document.getElementById('chart-daily'), {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label:'Score', data:scores, backgroundColor:bgC, borderColor:bdC, borderWidth:.5, borderRadius:3 },
+      { label:'Meta', data:meta, type:'line', borderColor:'#E24B4A', borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ y:{min:0,max:100,ticks:{font:{size:10},callback:v=>v+'%'}}, x:{ticks:{font:{size:9},autoSkip:true,maxRotation:0}} }}
+  });
+
+  if (cC) cC.destroy();
+  cC = new Chart(document.getElementById('chart-cumul'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label:'Acumulado', data:cumul, borderColor:a.mid, backgroundColor:a.light, borderWidth:2, pointRadius:1.5, fill:true, tension:.3 },
+      { label:'Meta', data:meta, borderColor:'#E24B4A', borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ y:{min:0,max:100,ticks:{font:{size:10},callback:v=>v+'%'}}, x:{ticks:{font:{size:9},autoSkip:true,maxRotation:0}} }}
+  });
+
+  let wdArr = [], wkArr = [], h1Arr = [], h2Arr = [];
+  for (let i = 1; i <= 30; i++) {
+    if (hasData(d[i])) {
+      const s = dayScore(d[i]);
+      if (isWeekend(i)) wkArr.push(s); else wdArr.push(s);
+      if (i <= 15) h1Arr.push(s); else h2Arr.push(s);
+    }
+  }
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : 0;
+
+  if (cT) cT.destroy();
+  cT = new Chart(document.getElementById('chart-trend'), {
+    type: 'bar',
+    data: { labels:['1ª metade (dias 1–15)','2ª metade (dias 16–30)'], datasets: [
+      { data:[avg(h1Arr),avg(h2Arr)], backgroundColor:[a.light.replace('0.08','0.3'), a.done], borderColor:[a.mid, a.border], borderWidth:.5, borderRadius:8 },
+      { label:'Meta', data:[S.target,S.target], type:'line', borderColor:'#E24B4A', borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ y:{min:0,max:100,ticks:{font:{size:11},callback:v=>v+'%'}}, x:{ticks:{font:{size:12}}} }}
+  });
+
+  if (cW) cW.destroy();
+  cW = new Chart(document.getElementById('chart-wknd'), {
+    type: 'bar',
+    data: { labels:['Dias úteis','Finais de semana'], datasets: [
+      { data:[avg(wdArr),avg(wkArr)], backgroundColor:[a.done,'#FAEEDA'], borderColor:[a.border,'#BA7517'], borderWidth:.5, borderRadius:8 },
+      { label:'Meta', data:[S.target,S.target], type:'line', borderColor:'#E24B4A', borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ y:{min:0,max:100,ticks:{font:{size:11},callback:v=>v+'%'}}, x:{ticks:{font:{size:12}}} }}
+  });
+
+  const corrs = computeCorrelations();
+  let corrHtml = '';
+  if (corrs.length > 0) {
+    corrHtml = '<div class="corr-grid">';
+    corrs.forEach(c => {
+      corrHtml += `<div class="corr-card">
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;">Hábitos âncora</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px;">${c.a.emoji} ${c.a.name} + ${c.b.emoji} ${c.b.name}</div>
+        <div style="font-size:12px;color:var(--text-2);">Juntos em <strong style="color:#185FA5;">${c.pct}%</strong> dos dias (${c.both}/${c.n})</div>
+      </div>`;
+    });
+    corrHtml += '</div>';
+  } else {
+    corrHtml = '<div style="font-size:13px;color:var(--text-3);margin-bottom:1.5rem;">Preencha mais dias para ver correlações entre hábitos.</div>';
+  }
+
+  const weak = computeWeakHabits();
+  if (weak.length > 0) {
+    corrHtml += '<div class="section-title" style="margin-bottom:.75rem;">Hábitos com baixa adesão</div>';
+    weak.forEach(w => {
+      corrHtml += `<div style="display:flex;align-items:center;gap:12px;background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+        <span style="font-size:16px;">${w.h.emoji}</span>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:#633806;">${w.h.name}</div><div style="font-size:12px;color:#854F0B;">Feito em ${w.pct}% dos dias preenchidos</div></div>
+        <div style="font-size:18px;font-weight:500;color:#BA7517;font-family:var(--mono);">${w.pct}%</div>
+      </div>`;
+    });
+  }
+  document.getElementById('corr-section').innerHTML = corrHtml;
+
+  let barsHtml = '';
+  S.habits.forEach(h => {
+    let cnt = 0;
+    for (let i = 1; i <= 30; i++) if (d[i] && d[i][h.id]) cnt++;
+    const pct = Math.round(cnt / 30 * 100);
+    barsHtml += `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+        <span>${h.emoji} ${h.name} <span class="wbadge">×${h.weight}</span></span>
+        <span style="font-weight:500;color:${scoreColor(pct)};font-family:var(--mono);">${pct}%</span>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" style="width:${pct}%;background:${scoreColor(pct)};"></div></div>
+    </div>`;
+  });
+  document.getElementById('habit-bars').innerHTML = barsHtml;
+}
+
+/* ── Cycle pills ── */
+function renderCyclePills() {
+  document.getElementById('cycle-pills').innerHTML = S.cycles.map((c, i) =>
+    `<button class="pill ${i === S.currentCycle ? 'active' : ''}" onclick="switchCycle(${i})">${c.name}</button>`
+  ).join('');
+  const c = cycleData();
+  document.getElementById('cycle-name-inp').value = c.name;
+  document.getElementById('dow-sel').value = c.startDow || 0;
+  document.getElementById('intent-inp').value = c.intent || '';
+}
+
+function switchCycle(i) { S.currentCycle = i; save(); renderCyclePills(); renderAll(); }
+function renameCycle(v) { cycleData().name = v; save(); renderCyclePills(); }
+function setStartDow(v) { cycleData().startDow = v; save(); renderCalendar(); }
+
+function addCycle() {
+  const prev = cycleData();
+  const n = S.cycles.length + 1;
+  S.cycles.push({ name: 'Ciclo ' + n, startDow: prev.startDow || 0, intent: '', data: {}, comments: {} });
+  S.currentCycle = S.cycles.length - 1;
+  save(); renderCyclePills(); renderAll();
+}
+
+/* ── Config ── */
+function renderConfig() {
+  document.getElementById('cfg-name').value = S.trackerName;
+  document.getElementById('target-input').value = S.target;
+  document.getElementById('habit-config-list').innerHTML = S.habits.map((h, i) => `
+    <div class="hrow">
+      <input type="text" value="${h.name}" onchange="S.habits[${i}].name=this.value" />
+      <input type="number" min="1" max="5" value="${h.weight}" onchange="S.habits[${i}].weight=parseInt(this.value)||1" />
+      <input type="text" value="${h.emoji}" maxlength="2" style="text-align:center;" onchange="S.habits[${i}].emoji=this.value" />
+      <button class="del-btn" onclick="removeHabit(${i})">×</button>
+    </div>`).join('');
+  renderSwatches();
+}
+
+function addHabit() { S.habits.push({ id: 'h' + Date.now(), name: 'Novo hábito', weight: 1, emoji: '⭐' }); renderConfig(); }
+function removeHabit(i) { S.habits.splice(i, 1); renderConfig(); }
+function saveConfig() { save(); renderAll(); alert('Configuração salva!'); }
+
+/* ── Tabs ── */
+function showTab(t, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active'); btn.classList.add('active');
+  if (t === 'graficos') renderCharts();
+  if (t === 'config') renderConfig();
+}
+
+/* ── Master render ── */
+function renderAll() { renderInsights(); renderMetrics(); renderCalendar(); }
+
+/* ── Boot ── */
+applyTheme();
+applyAccent();
+renderCyclePills();
+renderAll();
+</script>
+</body>
+</html>
